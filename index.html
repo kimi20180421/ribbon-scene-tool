@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>织带场景图一键生成</title>
+<style>
+  :root{
+    --bg:#f6f5f1; --card:#ffffff; --ink:#2c2c2a; --muted:#888780;
+    --line:#e5e3dc; --accent:#993556; --accent-soft:#fbeaf0;
+    --green:#0f6e56; --green-soft:#e1f5ee; --amber:#854f0b; --amber-soft:#faeeda;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+  body{background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;padding-bottom:60px}
+  header{background:var(--card);border-bottom:1px solid var(--line);padding:16px 28px;display:flex;align-items:center;gap:14px}
+  .logo{width:38px;height:38px;border-radius:10px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px;flex:none}
+  header h1{font-size:17px;font-weight:600}
+  header p{font-size:12px;color:var(--muted)}
+  .keydot{margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .keydot i{width:8px;height:8px;border-radius:50%;background:#b4b2a9;display:inline-block}
+  .keydot.on i{background:var(--green)}
+  .gear{border:1px solid var(--line);background:#fff;color:var(--ink);font-size:12px;padding:7px 12px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:6px;flex:none}
+  .gear:hover{border-color:var(--accent);color:var(--accent)}
+  main{max-width:1120px;margin:24px auto;padding:0 24px;display:grid;grid-template-columns:350px 1fr;gap:22px}
+  @media(max-width:940px){main{grid-template-columns:1fr}}
+  .banner{max-width:1120px;margin:16px auto 0;padding:0 24px;display:none}
+  .banner .inner{background:var(--amber-soft);color:var(--amber);border-radius:12px;padding:11px 16px;font-size:13px;display:flex;align-items:center;gap:10px}
+  .banner b{cursor:pointer;text-decoration:underline;font-weight:500}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+  .step-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:12px}
+  .step-tag b{width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
+  .drop{border:1.5px dashed var(--line);border-radius:12px;padding:26px 16px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s}
+  .drop:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .drop img{max-width:100%;max-height:190px;border-radius:8px;display:block;margin:0 auto 8px}
+  .tpl-list{display:flex;flex-direction:column;gap:7px;max-height:300px;overflow:auto}
+  .tpl{border:1.5px solid var(--line);border-radius:10px;padding:8px 11px;cursor:pointer;display:flex;gap:9px;align-items:center;transition:.15s}
+  .tpl:hover{border-color:var(--accent)}
+  .tpl.on{border-color:var(--accent);background:var(--accent-soft)}
+  .tpl .ico{font-size:16px;width:20px;text-align:center}
+  .tpl h3{font-size:13px;font-weight:500}
+  .tpl p{font-size:11px;color:var(--muted)}
+  .row2{display:flex;gap:10px;margin-top:14px}
+  .row2 label{flex:1;font-size:12px;color:var(--muted)}
+  select,input[type=text],input[type=password]{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:13px;background:#fff;color:var(--ink);font-family:inherit}
+  .row2 select{margin-top:4px;padding:7px 9px}
+  .btn{width:100%;margin-top:16px;padding:13px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:15px;font-weight:500;cursor:pointer;transition:.15s}
+  .btn:hover{opacity:.9}
+  .btn:disabled{background:#b4b2a9;cursor:not-allowed}
+  .hint{font-size:11px;color:var(--muted);margin-top:8px;text-align:center}
+  .result-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .result-head h2{font-size:15px;font-weight:500}
+  .badge{font-size:11px;padding:3px 10px;border-radius:20px;background:var(--green-soft);color:var(--green)}
+  .gallery{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.gallery{grid-template-columns:1fr}}
+  .shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fafaf8;position:relative;min-height:180px}
+  .shot img{width:100%;display:block;transition:opacity .35s}
+  .shot .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;font-size:12px;color:var(--muted);gap:8px}
+  .shuffle{border:none;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-size:12px;padding:4px 9px;cursor:pointer;white-space:nowrap}
+  .shuffle:hover{background:var(--accent);color:#fff}
+  .shuffle:disabled{opacity:.5;cursor:not-allowed}
+  .skeleton{padding:14px}
+  .sk-img{height:170px;border-radius:8px;background:linear-gradient(90deg,#f1efea 25%,#e8e5de 37%,#f1efea 63%);background-size:400% 100%;animation:sh 1.4s infinite}
+  .sk-line{height:12px;width:45%;margin-top:10px;border-radius:6px;background:#f1efea}
+  @keyframes sh{0%{background-position:100% 0}100%{background-position:0 0}}
+  .empty{color:var(--muted);text-align:center;padding:80px 20px;font-size:13px}
+  .err{padding:10px 12px;border-radius:10px;background:#fcebeb;color:#a32d2d;font-size:12px;margin-top:12px;display:none;white-space:pre-wrap;word-break:break-all}
+  .mask{position:fixed;inset:0;background:rgba(44,44,42,.35);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+  .mask.on{display:flex}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:460px;padding:22px;max-height:90vh;overflow:auto}
+  .modal h3{font-size:16px;font-weight:600;margin-bottom:4px}
+  .modal .sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+  .tabs{display:flex;gap:8px;margin-bottom:16px}
+  .tab{flex:1;border:1.5px solid var(--line);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:13px}
+  .tab.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:500}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+  .field .tip{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
+  .field .tip a{color:var(--accent)}
+  .clear{color:#a32d2d;cursor:pointer;text-decoration:underline;font-size:11px}
+  .modal-actions{display:flex;gap:10px;margin-top:18px}
+  .btn2{flex:1;padding:11px;border-radius:10px;font-size:14px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink);font-family:inherit}
+  .btn2.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn2:disabled{opacity:.6;cursor:not-allowed}
+  .modal-msg{font-size:12px;margin-top:10px;display:none;padding:8px 10px;border-radius:8px;line-height:1.5}
+  .modal-msg.ok{display:block;background:var(--green-soft);color:var(--green)}
+  .modal-msg.bad{display:block;background:#fcebeb;color:#a32d2d}
+  .divider{height:1px;background:var(--line);margin:16px 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">织</div>
+  <div>
+    <h1>织带场景图一键生成</h1>
+    <p>上传织带图 → 选择风格 → 一键生成场景效果图，不满意单张换一换</p>
+  </div>
+  <div class="keydot" id="keyState"><i></i><span>检测中…</span></div>
+  <button class="gear" id="openSettings">API 设置</button>
+</header>
+
+<div class="banner" id="banner">
+  <div class="inner">还没有填写 API Key。每个同学用自己的 Key，只保存在你自己的浏览器里 —— <b id="bannerBtn">现在填写</b></div>
+</div>
+
+<div class="mask" id="mask">
+  <div class="modal">
+    <h3>API 设置</h3>
+    <div class="sub">Key 只保存在你自己的浏览器（localStorage），不会写到服务器，其他同学看不到</div>
+    <div class="tabs">
+      <div class="tab on" data-p="gemini">Google Gemini</div>
+      <div class="tab" data-p="openai">OpenAI</div>
+    </div>
+    <div class="field">
+      <label>我的 API Key <span class="clear" id="clearKey" style="display:none">清除本机 Key</span></label>
+      <input type="password" id="keyInput" placeholder="粘贴你自己的 API Key" autocomplete="off">
+      <div class="tip" id="keyTip"></div>
+    </div>
+    <div class="field">
+      <label>图像模型</label>
+      <select id="modelSelect"></select>
+      <div class="tip" id="modelTip">模型选择也会记住在本机</div>
+    </div>
+    <div class="divider"></div>
+    <div class="field">
+      <label>网络代理 <span style="color:var(--muted);font-weight:400" id="netState"></span></label>
+      <input type="text" id="proxyInput" placeholder="http://127.0.0.1:7890">
+      <div class="tip"><a href="javascript:void(0)" id="testNet">检测网络连通性</a> · 这台机器的公共设置，留空则用系统代理或直连</div>
+    </div>
+    <div class="modal-msg" id="modalMsg"></div>
+    <div class="modal-actions">
+      <button class="btn2" id="cancelSettings">关闭</button>
+      <button class="btn2 primary" id="saveSettings">保存并验证</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div>
+    <div class="card">
+      <div class="step-tag"><b>1</b>上传织带产品图</div>
+      <div class="drop" id="drop">
+        <div id="dropHint">点击或拖入织带图<br><span style="font-size:11px">建议高清正面平铺图，织字清晰</span></div>
+        <img id="preview" style="display:none">
+      </div>
+      <input type="file" id="file" accept="image/*" hidden>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="step-tag"><b>2</b>选择风格（可多选）</div>
+      <div class="tpl-list" id="tpls">
+        <div class="tpl on" data-k="bold_color"><span class="ico">🟧</span><div><h3>高级撞色礼盒</h3><p>纯色背景 · 对角绕带 · 俯拍</p></div></div>
+        <div class="tpl on" data-k="luxury_dark"><span class="ico">⬛</span><div><h3>黑白轻奢礼盒堆</h3><p>深色反光台面 · 白盒堆叠</p></div></div>
+        <div class="tpl on" data-k="bakery_festive"><span class="ico">🍪</span><div><h3>节日烘焙包装</h3><p>饼干盒 · 木质台面 · 生活感</p></div></div>
+        <div class="tpl on" data-k="new_chinese"><span class="ico">🏮</span><div><h3>新中式礼盒</h3><p>红漆盒 · 深绿撞色 · 国风</p></div></div>
+        <div class="tpl" data-k="christmas"><span class="ico">🎁</span><div><h3>圣诞礼盒包装</h3><p>树灯背景 · 牛皮纸 · 氛围</p></div></div>
+        <div class="tpl" data-k="soft_paper"><span class="ico">🤍</span><div><h3>柔调纸品组合</h3><p>雪梨纸 · 平铺排版 · 电商</p></div></div>
+        <div class="tpl" data-k="product_wrap"><span class="ico">🧳</span><div><h3>产品包覆展示</h3><p>箱包实物包带 · 撞色背景</p></div></div>
+        <div class="tpl" data-k="bow_macro"><span class="ico">🎀</span><div><h3>蝴蝶结特写</h3><p>微距 · 突出织字与织纹</p></div></div>
+      </div>
+      <div class="row2">
+        <label>出图质量
+          <select id="quality">
+            <option value="medium" selected>标准 medium</option>
+            <option value="high">高清 high</option>
+            <option value="low">快速 low</option>
+          </select>
+        </label>
+        <label>画面比例
+          <select id="size">
+            <option value="1024x1024" selected>方图 1:1</option>
+            <option value="1024x1536">竖图 2:3</option>
+            <option value="1536x1024">横图 3:2</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="step-tag"><b>3</b>开始生成</div>
+      <button class="btn" id="go">一键生成效果图</button>
+      <div class="hint" id="costHint">已选 4 种风格 · 预计 4 张图</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="result-head">
+      <h2>生成结果</h2>
+      <span class="badge" id="status" style="visibility:hidden">完成</span>
+    </div>
+    <div class="err" id="err"></div>
+    <div id="emptyState" class="empty">上传织带图 → 选择风格 → 点击「一键生成」<br>每张图生成后可单独「换一换」</div>
+    <div class="gallery" id="gallery" style="margin-top:4px"></div>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const drop = $('#drop'), fileInput = $('#file'), preview = $('#preview'), dropHint = $('#dropHint');
+const gallery = $('#gallery'), emptyState = $('#emptyState'), errBox = $('#err');
+let ribbonDataUrl = null;
+
+// ---------- 本机存储（每个人的 Key 只在自己浏览器）----------
+const LS = {
+  key: (p) => 'ribbon_key_' + p,
+  model: (p) => 'ribbon_model_' + p,
+  provider: 'ribbon_provider',
+  get(k) { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } },
+  set(k, v) { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (_) {} },
+};
+const State = { provider: 'gemini', model: '', proxy: '', models: { gemini: {}, openai: {} }, serverKeys: {} };
+
+function myKey(provider) { return LS.get(LS.key(provider)); }
+function myModel(provider) {
+  return LS.get(LS.model(provider)) || (State.models[provider] ? Object.keys(State.models[provider])[0] : '');
+}
+function effectiveKey(provider) { return myKey(provider) || State.serverKeys[provider] || ''; }
+function effectiveModel(provider) { return myModel(provider); }
+
+// ---------- 上传 ----------
+drop.onclick = () => fileInput.click();
+fileInput.onchange = (e) => { const f = e.target.files[0]; if (f) handleFile(f); };
+['dragover','dragleave','drop'].forEach(ev => drop.addEventListener(ev, (e) => {
+  e.preventDefault();
+  if (ev === 'drop' && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+}));
+
+function handleFile(f) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 1536;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      ribbonDataUrl = c.toDataURL('image/jpeg', 0.92);
+      preview.src = ribbonDataUrl; preview.style.display = 'block'; dropHint.style.display = 'none';
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(f);
+}
+
+// ---------- 风格选择与成本 ----------
+document.querySelectorAll('.tpl').forEach(t => t.onclick = () => { t.classList.toggle('on'); updateCost(); });
+$('#quality').onchange = updateCost;
+let PRICE = { low: 0.05, medium: 0.4, high: 1.5 };
+const META = {};
+
+function currentPrice() {
+  const p = State.provider;
+  const m = META[p] && META[p][effectiveModel(p)];
+  return m ? m.price : PRICE;
+}
+function updateCost() {
+  const n = document.querySelectorAll('.tpl.on').length;
+  const price = currentPrice()[$('#quality').value] ?? 0.4;
+  $('#costHint').textContent = `已选 ${n} 种风格 · 预计 ${n} 张图 · 约 ¥${(n * price).toFixed(1)}`;
+}
+
+// ---------- 状态 ----------
+function applyStatus(d) {
+  State.provider = LS.get(LS.provider) || d.provider;
+  State.proxy = d.proxy || '';
+  State.serverKeys = {
+    gemini: d.serverKeys && d.serverKeys.gemini ? 'server' : '',
+    openai: d.serverKeys && d.serverKeys.openai ? 'server' : '',
+  };
+  State.models = d.models || State.models;
+  Object.assign(META, d.models || {});
+
+  const p = State.provider;
+  const mdl = effectiveModel(p);
+  const hasKey = Boolean(effectiveKey(p));
+  const price = (META[p] && META[p][mdl] ? META[p][mdl].price : d.price) || PRICE;
+
+  const q = $('#quality');
+  const fixed = META[p] && META[p][mdl] && META[p][mdl].fixedQuality;
+  q.disabled = Boolean(fixed);
+  if (fixed) {
+    q.innerHTML = `<option value="medium" selected>固定画质（约 ¥${price.medium.toFixed(2)}/张）</option>`;
+  } else {
+    const cur = q.value || 'medium';
+    q.innerHTML = `<option value="medium">标准 medium（约 ¥${price.medium.toFixed(2)}/张）</option>
+      <option value="high">高清 high（约 ¥${price.high.toFixed(2)}/张）</option>
+      <option value="low">快速 low（约 ¥${price.low.toFixed(2)}/张）</option>`;
+    q.value = cur;
+  }
+  updateCost();
+
+  const el = $('#keyState');
+  const label = (p === 'gemini' ? 'Gemini' : 'OpenAI') + ' · ' + (mdl || '默认模型');
+  if (hasKey) {
+    el.classList.add('on');
+    el.querySelector('span').textContent = label + '（' + (myKey(p) ? '我的 Key' : '共用 Key') + '）';
+  } else {
+    el.classList.remove('on');
+    el.querySelector('span').textContent = '未填写 Key';
+  }
+  $('#banner').style.display = hasKey ? 'none' : 'block';
+}
+
+function loadStatus() {
+  return fetch('/api/status').then(r => r.json()).then(d => { applyStatus(d); return d; })
+    .catch(() => { $('#keyState').querySelector('span').textContent = '服务未启动'; });
+}
+
+// ---------- 设置弹窗 ----------
+let editing = 'gemini';
+const mask = $('#mask');
+function openModal() {
+  editing = State.provider;
+  $('#keyInput').value = '';
+  $('#modalMsg').className = 'modal-msg';
+  syncModal();
+  mask.classList.add('on');
+}
+$('#openSettings').onclick = async () => { await loadStatus(); openModal(); };
+$('#bannerBtn').onclick = async () => { await loadStatus(); openModal(); };
+$('#cancelSettings').onclick = () => mask.classList.remove('on');
+mask.onclick = (e) => { if (e.target === mask) mask.classList.remove('on'); };
+
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  editing = t.dataset.p;
+  $('#keyInput').value = '';
+  $('#modalMsg').className = 'modal-msg';
+  syncModal();
+});
+
+function syncModal() {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.p === editing));
+  const cat = State.models[editing] || {};
+  const sel = $('#modelSelect');
+  sel.innerHTML = Object.entries(cat).map(([id, m]) =>
+    `<option value="${id}" ${id === effectiveModel(editing) ? 'selected' : ''}>${m.label} · 约 ¥${m.price.medium.toFixed(2)}/张</option>`
+  ).join('');
+  const mine = myKey(editing);
+  const shared = State.serverKeys[editing];
+  $('#clearKey').style.display = mine ? 'inline' : 'none';
+  $('#keyTip').innerHTML = mine
+    ? `本机已保存：${mine.slice(0, 6)}…${mine.slice(-4)}（只存在这个浏览器里）`
+    : (shared ? '本机未保存，当前使用服务器共用 Key；填写后将优先用你自己的' : '粘贴后点「保存并验证」');
+  $('#keyTip').innerHTML += editing === 'gemini'
+    ? '<br>申请地址：<a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>'
+    : '<br>申请地址：<a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>';
+  $('#proxyInput').value = State.proxy || '';
+}
+
+$('#clearKey').onclick = () => {
+  LS.set(LS.key(editing), '');
+  $('#modalMsg').className = 'modal-msg ok';
+  $('#modalMsg').textContent = '已清除本机保存的 Key';
+  syncModal();
+  applyStatus({ provider: State.provider, proxy: State.proxy, serverKeys: State.serverKeys, models: State.models, price: PRICE });
+};
+
+$('#testNet').onclick = async () => {
+  const msg = $('#modalMsg');
+  msg.className = 'modal-msg ok';
+  msg.textContent = '正在检测…';
+  try {
+    const px = $('#proxyInput').value.trim();
+    const r = await fetch('/api/netcheck?proxy=' + encodeURIComponent(px));
+    const d = await r.json();
+    const any = d.results.some(x => x.ok);
+    msg.className = any ? 'modal-msg ok' : 'modal-msg bad';
+    msg.textContent = d.results.map(x => `${x.name}: ${x.ok ? '连通 ' + x.ms + 'ms' : '失败（' + (x.error || x.status) + '）'}`).join(' ｜ ') + (d.proxy ? ' · 代理 ' + d.proxy : ' · 未用代理');
+  } catch (e) {
+    msg.className = 'modal-msg bad';
+    msg.textContent = '检测失败：' + e.message;
+  }
+};
+
+$('#saveSettings').onclick = async () => {
+  const btn = $('#saveSettings'), msg = $('#modalMsg');
+  const key = $('#keyInput').value.trim();
+  const model = $('#modelSelect').value;
+  const proxy = $('#proxyInput').value.trim();
+
+  LS.set(LS.model(editing), model);
+  LS.set(LS.provider, editing);
+
+  if (proxy !== State.proxy) {
+    await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: editing, model, proxy }) }).catch(() => {});
+    State.proxy = proxy;
+  }
+
+  if (!key) {
+    msg.className = 'modal-msg ok';
+    msg.textContent = '已保存模型与代理设置（未填写新 Key）';
+    await loadStatus();
+    setTimeout(() => mask.classList.remove('on'), 700);
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = '验证中…';
+  msg.className = 'modal-msg';
+  try {
+    const r = await fetch('/api/verify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider: editing, key, proxy })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    LS.set(LS.key(editing), key);
+    await loadStatus();
+    msg.className = 'modal-msg ok';
+    msg.textContent = 'Key 验证通过，已保存在你自己的浏览器里';
+    setTimeout(() => mask.classList.remove('on'), 800);
+  } catch (e) {
+    msg.className = 'modal-msg bad';
+    msg.textContent = e.message;
+  }
+  btn.disabled = false; btn.textContent = '保存并验证';
+};
+
+// ---------- 生成 ----------
+function shotSkeleton(name) {
+  const el = document.createElement('div');
+  el.className = 'shot';
+  el.innerHTML = `<div class="skeleton"><div class="sk-img"></div><div class="sk-line"></div></div>
+    <div class="bar"><span>${name}</span><span>生成中…</span></div>`;
+  return el;
+}
+
+function requestBody(styles, extra = {}) {
+  const p = State.provider;
+  return JSON.stringify({
+    image: ribbonDataUrl,
+    styles,
+    provider: p,
+    model: effectiveModel(p),
+    key: myKey(p) || '',
+    quality: $('#quality').value,
+    size: $('#size').value,
+    ...extra,
+  });
+}
+
+function shotCard(res, variation) {
+  const el = document.createElement('div');
+  el.className = 'shot';
+  el.innerHTML = `<img src="${res.url}" alt="${res.styleName}">
+    <div class="bar"><span>${res.styleName}</span><button class="shuffle">↻ 换一换</button></div>`;
+  el.querySelector('.shuffle').onclick = async (e) => {
+    const btn = e.target; btn.disabled = true; btn.textContent = '生成中…';
+    el.querySelector('img').style.opacity = '.35';
+    try {
+      const r = await fetch('/api/generate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: requestBody([res.styleKey], { variation: variation + 1 })
+      });
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+      const item = data.results[0];
+      if (item.error) throw new Error(item.error);
+      el.querySelector('img').src = item.url;
+      variation++;
+    } catch (err) { showErr(err.message); }
+    el.querySelector('img').style.opacity = '1'; btn.disabled = false; btn.textContent = '↻ 换一换';
+  };
+  return el;
+}
+
+function showErr(msg) { errBox.textContent = msg; errBox.style.display = 'block'; }
+function hideErr() { errBox.style.display = 'none'; }
+
+$('#go').onclick = async () => {
+  hideErr();
+  if (!ribbonDataUrl) { showErr('请先上传一张织带产品图'); return; }
+  const styles = [...document.querySelectorAll('.tpl.on')].map(t => t.dataset.k);
+  if (!styles.length) { showErr('请至少选择一种风格'); return; }
+  if (!effectiveKey(State.provider)) {
+    showErr('还没有填写你自己的 API Key，请点右上角「API 设置」');
+    openModal();
+    return;
+  }
+
+  const btn = $('#go');
+  btn.disabled = true; btn.textContent = '生成中…';
+  gallery.innerHTML = ''; emptyState.style.display = 'none';
+  $('#status').style.visibility = 'hidden';
+
+  const cards = {};
+  styles.forEach(k => {
+    const name = document.querySelector(`.tpl[data-k="${k}"] h3`).textContent;
+    const el = shotSkeleton(name);
+    gallery.appendChild(el); cards[k] = el;
+  });
+
+  try {
+    const r = await fetch('/api/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: requestBody(styles)
+    });
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    data.results.forEach((res) => {
+      const old = cards[res.styleKey];
+      if (!old) return;
+      if (res.error) {
+        old.innerHTML = `<div class="skeleton"><div class="sk-img" style="animation:none;display:flex;align-items:center;justify-content:center;color:#a32d2d;font-size:12px;padding:10px;text-align:center">生成失败<br>${res.error.slice(0,80)}</div></div><div class="bar"><span>${res.styleName}</span><span style="color:#a32d2d">失败</span></div>`;
+      } else {
+        old.replaceWith(shotCard(res, 0));
+      }
+    });
+    const ok = data.results.filter(x => !x.error).length;
+    const st = $('#status');
+    st.textContent = `成功 ${ok}/${data.results.length} · 可单张换一换`;
+    st.style.visibility = 'visible';
+  } catch (e) {
+    showErr(e.message);
+  }
+  btn.disabled = false; btn.textContent = '一键生成效果图';
+};
+
+loadStatus();
+</script>
+</body>
+</html>

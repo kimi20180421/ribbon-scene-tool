@@ -1,0 +1,16 @@
+{
+  "name": "ribbon-scene-tool",
+  "version": "1.0.0",
+  "private": true,
+  "description": "织带场景图一键生成工具：上传织带产品图，多风格批量生成包装场景效果图，支持每人自己的 API Key",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "undici": "^8.12.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
