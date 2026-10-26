@@ -28,6 +28,18 @@ npm start
 2. 粘贴你自己的 API Key（Gemini 申请：<https://aistudio.google.com/apikey>；OpenAI 申请：<https://platform.openai.com/api-keys>）
 3. 点「保存并验证」——Key 只保存在你自己的浏览器 localStorage，不会写入服务器
 
+## 前端说明（Arco Design）
+
+界面基于字节跳动开源的 [Arco Design](https://arco.design)（React 版）构建，源码在 `web/`：
+
+```bash
+cd web
+npm install
+npm run build   # 产物输出到 web/dist，由后端服务直接托管
+```
+
+仓库已包含构建好的 `web/dist`，普通使用无需执行前端构建；只有修改前端代码时才需要重新 build。
+
 ## 局域网共享（可选）
 
 让同事用他们的电脑访问：

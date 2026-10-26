@@ -395,16 +395,24 @@ async function pool(items, limit, worker) {
 
 // ---------- 静态文件 ----------
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml' };
+const DIST_DIR = path.join(ROOT, 'web', 'dist');
 
-function serveStatic(req, res, pathname) {
-  const rel = pathname === '/' ? 'index.html' : decodeURIComponent(pathname).replace(/^\/+/, '');
-  const file = path.join(ROOT, rel);
-  if (!file.startsWith(ROOT)) { res.writeHead(403); res.end('Forbidden'); return; }
+function serveFrom(res, baseDir, rel) {
+  const file = path.join(baseDir, rel);
+  if (!file.startsWith(baseDir)) { res.writeHead(403); res.end('Forbidden'); return; }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404); res.end('Not found'); return; }
     res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream' });
     res.end(data);
   });
+}
+
+function serveStatic(req, res, pathname) {
+  if (pathname.startsWith('/output/')) {
+    return serveFrom(res, OUT_DIR, decodeURIComponent(pathname).replace(/^\/output\/?/, '') || '');
+  }
+  const rel = pathname === '/' ? 'index.html' : decodeURIComponent(pathname).replace(/^\/+/, '');
+  return serveFrom(res, DIST_DIR, rel);
 }
 
 // ---------- 服务 ----------

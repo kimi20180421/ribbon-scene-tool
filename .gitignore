@@ -1,4 +1,5 @@
 .env
 output/
 node_modules/
+web/node_modules/
 *.log
